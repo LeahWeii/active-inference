@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 from mdp_env.hidden_markov_model_of_P2 import *
-
+from plot_file import *
 import torch
 import time
 import torch.nn.functional as F
@@ -53,8 +53,7 @@ class InitialOpacityPolicyGradient:
         self.ex_num = ex_num
         self.V = V  # number of sampled trajectories.
         self.batch_size = batch_size  # number of trajectories processed in each batch.
-        self.T = T  # length of the sampled trajectory.
-        self.eta = eta  # step size for theta.
+        self.T = T  # length of the sampled trajectory.  # step size for theta.
 
         # The states and actions of original MDP
         self.states = self.hmm_list[0].states
@@ -402,6 +401,8 @@ class InitialOpacityPolicyGradient:
                 idx = batch_indices[j].item()
                 grad[:, idx] = result
 
+
+
         return grad
 
     def dtheta_T_dx_line(self, index, type_num, epsilon=0.0001, max_iterations=100):
@@ -492,8 +493,8 @@ class InitialOpacityPolicyGradient:
         all_grads = torch.zeros(result_shape, dtype=torch.float32, device=device)
 
         # Pre-compute the mask once
-        mask = torch.ones(self.x_size, dtype=torch.float32, device=device)
-        mask[self.modify_list] = 0.0
+        mask = torch.zeros(self.x_size, dtype=torch.float32, device=device)
+        mask[self.modify_list] = 1
 
         # Process each type - potential for parallelization
         for type_num in range(self.num_of_types):
@@ -504,6 +505,7 @@ class InitialOpacityPolicyGradient:
             with torch.no_grad():
                 # This is the most expensive operation - optimize dtheta_T_dx further
                 grad_T = self.dtheta_T_dx(type_num)
+
 
                 # Convert to tensor only if needed
                 if not isinstance(grad_T, torch.Tensor):
@@ -561,6 +563,8 @@ class InitialOpacityPolicyGradient:
         # Calculate product
         # with timing("matrix_multiplication"):
         product = torch.matmul(nabla_H, nabla_Q)
+        # torch.set_printoptions(precision=10, sci_mode=True, threshold=float('inf'))
+        # print(f"product = {product}")
         product = product + self.dh_dx()
 
         return H, product
@@ -610,6 +614,7 @@ class InitialOpacityPolicyGradient:
             self.update_the_lists()
 
     def solver(self):
+        torch.set_printoptions(precision=10, sci_mode=True)
 
         # Pre-allocate tensors for reuse
         if torch.cuda.is_available():
@@ -640,7 +645,7 @@ class InitialOpacityPolicyGradient:
             self.x_list.append(self.x.clone().detach().cpu())
 
             # Update learning rate with decay
-            self.eta = 0.5 * math.exp(-0.005 * i)
+            eta = 1*math.exp(-0.0005 * i)
 
             # Prepare all trajectories at once if possible
             # with timing("generate_trajectories"):
@@ -703,7 +708,7 @@ class InitialOpacityPolicyGradient:
             else:
                 grad_to_use = grad
 
-            self.x = torch.clamp(self.x - self.eta * grad_to_use, min=0)
+            self.x = torch.clamp(self.x - eta * grad_to_use, min=0)
 
 
             # Print in the right format - ensure detached for numpy conversion
@@ -726,23 +731,15 @@ class InitialOpacityPolicyGradient:
         self.iteration_list = range(self.iter_num)
 
         # Save results
-        with open(f'../Data/entropy_values_{self.ex_num}.pkl', 'wb') as file:
+        with open(f'./Data/entropy_values_{self.ex_num}.pkl', 'wb') as file:
             pickle.dump(self.entropy_list, file)
 
-        with open(f'../Data/x_list_{self.ex_num}', 'wb') as file:
+        with open(f'./Data/x_list_{self.ex_num}', 'wb') as file:
             pickle.dump(self.x_list, file)
 
-        with open(f'../Data/theta_collection_{self.ex_num}', 'wb') as file:
+        with open(f'./Data/theta_collection_{self.ex_num}', 'wb') as file:
             pickle.dump(self.theta_torch_collection, file)
 
-        # Plot results
-        plt.figure(figsize=(10, 6))
-        plt.plot(self.iteration_list, self.entropy_list, label='Entropy')
-        plt.xlabel("Iteration number")
-        plt.ylabel("Values")
-        plt.legend()
-        plt.grid(True)
-        plt.savefig(f'../Data/graph_{self.ex_num}.png')
-        plt.show()
+        plot_figures(self.ex_num,self.iter_num,self.modify_list, self.weight)
 
         return

@@ -53,7 +53,6 @@ class MDP:
         for state, act, next_state in itertools.product(self.states, self.actlist, self.states):
             self.trans[state][act][next_state] = self.P(state, act, next_state)
             self.stotrans[state][act][next_state] = self.P(state, act, next_state)
-
         return
 
     def R(self, state, action):

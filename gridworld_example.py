@@ -10,8 +10,10 @@ from mdp_env.hidden_markov_model_of_P2 import *
 # logger.add("logs_for_examples/log_file_mario_example_information_theoretic_opacity.log")
 #
 # logger.info("This is the log file for the 6X6 gridworld with goal states 9, 20, 23 test case.")
-ex_num = 36
-random.seed(ex_num)
+ex_num = 3
+seed = 1
+random.seed(seed)
+print(f'seed={seed}')
 import random
 
 def generate_random_indices(ncols, nrows, n_targets, n_obstacles, n_modify):
@@ -46,14 +48,13 @@ def generate_random_indices(ncols, nrows, n_targets, n_obstacles, n_modify):
 
 
 # Initial set-up
-penalty_states = []
 ncols = 6
 nrows = 6
 n_targets = 5
 n_obstacles = 8
 n_modify=4
 
-targets, targets_low_reward,targets_high_reward, obstacles, initial, modify_list = generate_random_indices(ncols, nrows, n_targets, n_obstacles, n_modify)
+targets, targets_low_reward, targets_high_reward, obstacles, initial, modify_list = generate_random_indices(ncols, nrows, n_targets, n_obstacles, n_modify)
 print(targets, obstacles, initial, modify_list)
 reward_states = targets
 
@@ -67,10 +68,6 @@ for state in range(ncols*nrows):
         initial_dist[state] = 1 / len(initial)
     else:
         initial_dist[state] = 0
-
-robot_ts_1 = read_from_file_MDP_old('robotmdp_1.txt')#robot 1 alpha = 0.9
-robot_ts_2 = read_from_file_MDP_old('robotmdp_2.txt')#robot 2 alpha = 0.5
-
 
 # sensor setup
 sensors = {'A', 'B', 'C', 'D', 'NO'}
@@ -118,18 +115,14 @@ def generate_sensor_areas(grid_size, coverage_percent=90):
     # Calculate NO area as the remainder
     setNO = set(range(total_cells)) - (setA | setB | setC | setD)
 
-    # Verify coverage percentage
-    # actual_coverage = 100 * (1 - len(setNO) / total_cells)
-    # print(f"setA={setA}")
-
     return setA, setB, setC, setD, setNO
 
 setA, setB, setC, setD, setNO = generate_sensor_areas(grid_size=(ncols,nrows))
 print(f'setA={setA}')
-print(f'setB={setA}')
-print(f'setC={setA}')
-print(f'setD={setA}')
-print(f'setN0={setA}')
+print(f'setB={setB}')
+print(f'setC={setC}')
+print(f'setD={setD}')
+print(f'setN0={setNO}')
 
 setA ={}
 
@@ -150,42 +143,40 @@ sensor_net.set_coverage('NO', setNO)
 sensor_net.sensor_noise = sensor_noise
 # sensor_net.sensor_cost_dict = sensor_cost
 
+
+#initialize differenrt types of agents with different transition and reward, but same initial state and environment
+robot_ts_1 = read_from_file_MDP_old('./robotmdp_para/robotmdp_1.txt')#robot 1 alpha = 0.9
+robot_ts_2 = read_from_file_MDP_old('./robotmdp_para/robotmdp_2.txt')#robot 2 alpha = 0.6
+robot_ts_3 = read_from_file_MDP_old('./robotmdp_para/robotmdp_3.txt')#robot 2 alpha = 0.9
+robot_ts_4 = read_from_file_MDP_old('./robotmdp_para/robotmdp_4.txt')#robot 2 alpha = 0.7
+robot_ts_5 = read_from_file_MDP_old('./robotmdp_para/robotmdp_5.txt')#robot 2 alpha = 1
+
 agent_gw_1 = GridworldGui(initial, nrows, ncols, robot_ts_1, targets, obstacles, unsafe_u, initial_dist)
 agent_gw_1.mdp.get_supp()
 agent_gw_1.mdp.gettrans()
 agent_gw_1.mdp.get_reward()
-# agent_gw_1.draw_state_labels() #need pygame
-trans_1 = agent_gw_1.mdp.trans
+
 
 agent_gw_2 = GridworldGui(initial, nrows, ncols, robot_ts_2, targets, obstacles, unsafe_u, initial_dist)
 agent_gw_2.mdp.get_supp()
 agent_gw_2.mdp.gettrans()
 agent_gw_2.mdp.get_reward()
-# agent_gw_2.draw_state_labels() # need pygame
-trans_2 = agent_gw_1.mdp.trans
 
-# reward/ value matrix for each agent.
-# value_dict_1 = dict()
-# for state in agent_gw_1.mdp.states:
-#     if state == 5:
-#         value_dict_1[state] = 0.1
-#     elif state == 35:
-#         value_dict_1[state] = 0.1
-#     elif state in penalty_states:
-#         value_dict_1[state] = -0.1
-#     else:
-#         value_dict_1[state] = -0.01
-#
-# value_dict_2 = dict()
-# for state in agent_gw_2.mdp.states:
-#     if state == 5:
-#         value_dict_2[state] = 0.1
-#     elif state == 35:
-#         value_dict_2[state] = 0.1
-#     elif state in penalty_states:
-#         value_dict_2[state] = -20
-#     else:
-#         value_dict_2[state] = -0.01
+agent_gw_3 = GridworldGui(initial, nrows, ncols, robot_ts_3, targets, obstacles, unsafe_u, initial_dist)
+agent_gw_3.mdp.get_supp()
+agent_gw_3.mdp.gettrans()
+agent_gw_3.mdp.get_reward()
+
+agent_gw_4 = GridworldGui(initial, nrows, ncols, robot_ts_4, targets, obstacles, unsafe_u, initial_dist)
+agent_gw_4.mdp.get_supp()
+agent_gw_4.mdp.gettrans()
+agent_gw_4.mdp.get_reward()
+
+agent_gw_5 = GridworldGui(initial, nrows, ncols, robot_ts_5, targets, obstacles, unsafe_u, initial_dist)
+agent_gw_5.mdp.get_supp()
+agent_gw_5.mdp.gettrans()
+agent_gw_5.mdp.get_reward()
+
 
 value_dict_1 = dict()
 for state in agent_gw_1.mdp.states:
@@ -203,7 +194,34 @@ for state in agent_gw_2.mdp.states:
     elif state in targets_high_reward:
         value_dict_2[state] = 2
     else:
-        value_dict_2[state] = -1
+        value_dict_2[state] = -2
+
+value_dict_3 = dict()
+for state in agent_gw_3.mdp.states:
+    if state in targets_low_reward:
+        value_dict_3[state] = 0.1
+    elif state in targets_high_reward:
+        value_dict_3[state] = 4
+    else:
+        value_dict_3[state] = 0
+
+value_dict_4 = dict()
+for state in agent_gw_4.mdp.states:
+    if state in targets_low_reward:
+        value_dict_4[state] = 2
+    elif state in targets_high_reward:
+        value_dict_4[state] = 2
+    else:
+        value_dict_4[state] = -2
+
+value_dict_5 = dict()
+for state in agent_gw_5.mdp.states:
+    if state in targets_low_reward:
+        value_dict_5[state] = 2
+    elif state in targets_high_reward:
+        value_dict_5[state] = 1
+    else:
+        value_dict_5[state] = -0.5
 
 
 
@@ -229,17 +247,17 @@ for state in agent_gw_1.mdp.states:
 # #  -> reduces computation.
 #sp:0-->both 45:E,  0.6-->1S2E
 hmm_1 = HiddenMarkovModelP2(agent_gw_1.mdp, sensor_net, side_payment, modify_list, value_dict=value_dict_1)
-# policy1 = hmm_1.get_policy_entropy(0.1)
 hmm_2 = HiddenMarkovModelP2(agent_gw_2.mdp, sensor_net, side_payment, modify_list, value_dict=value_dict_2)
-# policy2 = hmm_2.get_policy_entropy(0.1)
-hmm_list = [hmm_1, hmm_2]
+hmm_3 = HiddenMarkovModelP2(agent_gw_3.mdp, sensor_net, side_payment, modify_list, value_dict=value_dict_3)
+hmm_4 = HiddenMarkovModelP2(agent_gw_4.mdp, sensor_net, side_payment, modify_list, value_dict=value_dict_4)
+hmm_5 = HiddenMarkovModelP2(agent_gw_5.mdp, sensor_net, side_payment, modify_list, value_dict=value_dict_5)
+# hmm_list = [hmm_1, hmm_2, hmm_3, hmm_4, hmm_5]
+hmm_list = [hmm_1, hmm_2, hmm_3]
 
 # masking_policy_gradient = PrimalDualPolicyGradient(hmm=hmm_p2, iter_num=1000, V=10, T=10, eta=1.5, kappa=0.1, epsilon=threshold)
 # masking_policy_gradient.solver()
 
 #for nips, I start ex from 8. 0 is for test(weights=0)
-masking_policy_gradient = InitialOpacityPolicyGradient(hmm_list=hmm_list, ex_num=ex_num, weight=0.01,sp = 2,iter_num=200, batch_size=10, V=200,
-                                                       T=ncols+ncols,
-                                                       eta=0.5) # decreasing eta
-
+masking_policy_gradient = InitialOpacityPolicyGradient(hmm_list=hmm_list, ex_num=ex_num, weight=1e-01, sp = 2, iter_num=100, batch_size=10, V=200,
+                                                       T=ncols+ncols)
 masking_policy_gradient.solver()

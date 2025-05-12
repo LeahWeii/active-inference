@@ -17,7 +17,7 @@ class HiddenMarkovModelP2:
         self.sensors = sensors
         self.side_payment = side_payment
         self.modify_list = modify_list
-        print(f'modify_list={modify_list}')
+
 
         # self.augmented_states = list()  # The augmented states space S x \Sigma # TODO: Check if this should be a set
         self.states = self.agent_mdp.states
