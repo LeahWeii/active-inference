@@ -17,15 +17,9 @@ class HiddenMarkovModelP2:
         self.sensors = sensors
         self.side_payment = side_payment
         self.modify_list = modify_list
-
-
-        # self.augmented_states = list()  # The augmented states space S x \Sigma # TODO: Check if this should be a set
         self.states = self.agent_mdp.states
-
-        # instead? I have made it a list here to ensure that we can have a transition matrix defined appropriately.
-        # self.get_augmented_states()
-
         self.states_indx_dict = dict()
+
         indx_num = 0
         for st in self.states:
             self.states_indx_dict[st] = indx_num
@@ -40,30 +34,19 @@ class HiddenMarkovModelP2:
 
         self.act_indx_reverse_dict = {v: k for k, v in self.actions_indx_dict.items()}
 
-        # self.transition_dict = defaultdict(
-        #     lambda: defaultdict(dict))  # The transition dictionary for the augmented state-space.
-
         # set the value dictionary.
         self.value_dict_input = value_dict # The value dictionary for the augmented state-space i.e., only state dependednt.
         self.value_dict = defaultdict(lambda: defaultdict(dict))  # The format is [aug_st_indx][mask_act_indx]=value.
         self.get_value_dict()
 
         self.transition_dict = self.agent_mdp.trans
-        # self.get_transition_dict()
-
-        # self.transition_mat = {a: np.zeros((len(self.augmented_states), len(self.augmented_states))) for a in
-        # self.masking_acts}
         self.transition_mat = np.zeros(
             (len(self.states), len(self.states), len(self.agent_mdp.actlist)))
-
         self.get_transition_mat()
-
-        self.state_obs2 = state_obs2  # state_obs2 is the state observation dict. state_obs2[aug_states]={sensors
-        # that cover state}
+        self.state_obs2 = state_obs2  # state_obs2 is the state observation dict. state_obs2[aug_states]={sensors that cover state}
         self.get_state_obs2()
         self.observations = set(
-            self.sensors.sensors)  # TODO: This needs to be changed for generalization if the observation function
-        # TODO: changes!!!
+            self.sensors.sensors)
         self.observations.add('0')  # '0' represents the null observation.
         self.observations_indx_dict = dict()  # Defining a dictionary with [obs]=indx
         indx_num = 0
@@ -75,26 +58,18 @@ class HiddenMarkovModelP2:
         self.obs_noise = self.sensors.sensor_noise
 
         self.emission_prob = defaultdict(
-            lambda: defaultdict(dict))  # The emission probability for the observations. emission_prob[
-        # aug_state][obs]=probability
+            lambda: defaultdict(dict))  # The emission probability for the observations. emission_prob[aug_state][obs]=probability
         self.get_emission_prob()
 
         self.initial_dist = dict([])  # The initial distribution of the augmented state-space. initial_dist[augstate]=probability
-        # initial distribution array.
         self.mu_0 = np.zeros(len(self.states))
 
         self.get_initial_dist()
-
-        # # sampled initial state
-        # self.initial_state = None
-        # self.get_initial_state()
 
         # set of initial states.
         self.initial_states = set()
         self.get_initial_states()
 
-        # self.secret_goal_states = secret_goal_states  # The secret goal states.
-        # self.get_secret_goal_states(secret_goal_states)
         self.optimal_V, self.policy = self.get_policy_entropy(tau=0.1)
         self.optimal_theta = self.get_optimal_theta(self.optimal_V)
 
@@ -137,13 +112,9 @@ class HiddenMarkovModelP2:
                 for act in self.actions:
                     core = (self.value_dict[self.states_indx_dict[st]][self.actions_indx_dict[act]]
                             + self.agent_mdp.disc_factor * self.getcore(V1, st, act)) / tau
-                    # Q[st][act] = np.exp(core)
                     Q_theta.append(core)
                 Q_sub = Q_theta - np.max(Q_theta)
                 p = np.exp(Q_sub) / np.exp(Q_sub).sum()
-                # Q_s = sum(Q[st].values())
-                # for act in self.actions:
-                # policy[st][act] = Q[st][act] / Q_s
                 for i in range(len(self.actions)):
                     policy[st][self.actions[i]] = p[i]
                 V[self.states.index(st)] = tau * np.log(np.exp(Q_theta).sum())
@@ -163,22 +134,7 @@ class HiddenMarkovModelP2:
                 q_table[s_idx, a_idx] = q_value
         return q_table
 
-
-    # def convert_policy(self, policy):
-    #     policy_m = np.zeros([len(self.states), len(self.actions)])
-    #     i = 0
-    #     for st in self.states:
-    #         for act in self.actions:
-    #             policy_m[i] = policy[st][act]
-    #             i += 1
-    #     return policy_m
-
     def get_transition_mat(self):
-        # # The matrix representation of the transition function. transition_mat[i, j, action] = probability.
-        # for state, next_state in itertools.product(self.augmented_states, self.augmented_states):
-        #     self.transition_mat[self.augmented_states_indx_dict[state], self.augmented_states_indx_dict[next_state]] = \
-        #     self.transition_dict[state][next_state]
-
         # The matrix representation of the transition function. transition_mat[i, j, action] = probability.
         for state, next_state, action in itertools.product(self.states, self.states,
                                                            self.agent_mdp.actlist):
@@ -187,15 +143,6 @@ class HiddenMarkovModelP2:
                 self.transition_dict[state][action][next_state]
 
         return
-
-    # def get_transition_probability(self, state, act, next_state):
-    #     # This is computed as \sum_{a\in A} P(s,a,s') \pi_G(a\mid s)
-    #     # TODO: Check if the transition probability is correct.
-    #     probability = self.agent_mdp.P(state, act, next_state)
-    #     # for a in self.agent_mdp.actlist:
-    #     #     # probability = probability + (self.agent_mdp.P(state, a, next_state) * self.goal_policy[(state, a)])
-    #
-    #     return float(probability)
 
     def get_emission_prob(self):
         # In the emission function for each state, and observation pairs.
@@ -222,7 +169,7 @@ class HiddenMarkovModelP2:
                 return 0
 
     def get_initial_dist(self):
-        # Each augmented state, have an initial distribution. Consider initial mask to be the first sensor. # TODO: Change this to no masking action.
+        # Each augmented state, have an initial distribution. Consider initial mask to be the first sensor.
         for state in self.states:
             self.initial_dist[state] = self.agent_mdp.initial_distribution[state]
             self.mu_0[self.states_indx_dict[state]] = self.initial_dist[state]
@@ -251,9 +198,9 @@ class HiddenMarkovModelP2:
 
     # the following is the sample_observation for different 'NO' and 'Null'.
     def sample_observation(self, state):
-        # Given an augmented state it gives a sample observation - true observation or null observation. TODO: Check
+        # Given an augmented state it gives a sample observation - true observation or null observation.
         #  if this is correct-- I am considering that whenever the robot is not under a sensor, it only gets the true
-        #  information that it is not under any sensor. TODO: Check if that has to be changed to include null
+        #  information that it is not under any sensor.
         #   observations for it as well.
         obs_list = list(self.state_obs2[state])
         if len(obs_list) == 0:  # To return null observation with prob. 1 when masked.
@@ -268,8 +215,7 @@ class HiddenMarkovModelP2:
 
     # The following is the sample_observation for SAME 'NO' and 'Null'.
     def sample_observation_same_NO_Null(self, state):
-        # Given an augmented state it gives a sample observation - true observation or null observation. TODO: Check
-        #  if this is correct-- I am considering that whenever the robot is not under a sensor, it only gets null.
+        # Given an augmented state it gives a sample observation - true observation or null observation.
 
         obs_list = list(self.state_obs2[state])
         if len(obs_list) == 0:  # To return null observation with prob. 1 when masked.
@@ -286,7 +232,6 @@ class HiddenMarkovModelP2:
 
     def sample_next_state(self, state, act):
         # Given an augmented state, a action, the function returns a sampled next state.
-        # next_states_supp = list(self.transition_dict[state][act].keys())
         next_states_supp = list(self.transition_dict[state][self.act_indx_reverse_dict[act]].keys())
         next_states_prob = [self.transition_dict[state][self.act_indx_reverse_dict[act]][next_state] for next_state in next_states_supp]
         return random.choices(next_states_supp, weights=next_states_prob)[0]

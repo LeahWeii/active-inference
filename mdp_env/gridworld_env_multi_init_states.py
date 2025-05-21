@@ -1,12 +1,10 @@
 from mdp_env.mdp import *
-
 import time
-
+import random
 # import pygame
 # import pygame.locals as pgl
 
-# import random as pr
-import random
+
 
 
 class Gridworld():
@@ -27,10 +25,6 @@ class Gridworld():
         self.obstacles = obstacles
         self.unsafe_states = unsafe_states
         self.states = [(x, y) for x in range(0, ncols) for y in range(0, nrows)]
-
-        # # Trying to remove the obstacles from the list of states.
-        # self.states_without_obstacles = list(set(range(self.nstates)) - set(self.obstacles))
-
         prob = {a: np.zeros((self.nstates, self.nstates)) for a in self.actlist}
         for s in self.states:
             for a in self.actlist:

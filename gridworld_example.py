@@ -1,20 +1,23 @@
-import math
-
 from mdp_env.gridworld_env_multi_init_states import *
-# from setup_and_solvers.LP_for_nominal_policy import *
-from solver.initial_opacity_gradient_calculation import *
+from generate_data_for_confusion_matrix import *
 import random
-from mdp_env.sensors import *
-from mdp_env.hidden_markov_model_of_P2 import *
 
-# logger.add("logs_for_examples/log_file_mario_example_information_theoretic_opacity.log")
-#
-# logger.info("This is the log file for the 6X6 gridworld with goal states 9, 20, 23 test case.")
-ex_num = 3
-seed = 1
+ex_num = 57
+
+with open(f'./Data/x_list_{ex_num}', 'rb') as file:
+    x_list = pickle.load(file)
+
+seed = 0
 random.seed(seed)
 print(f'seed={seed}')
-import random
+
+# Initial set-up for 5 types of agent in a stochastic gridworld
+ncols = 10
+nrows = 10
+n_targets = 12
+n_obstacles = 20
+n_modify=20
+
 
 def generate_random_indices(ncols, nrows, n_targets, n_obstacles, n_modify):
     total_states = ncols * nrows
@@ -22,6 +25,7 @@ def generate_random_indices(ncols, nrows, n_targets, n_obstacles, n_modify):
 
     # Randomly select target indices
     targets = random.sample(all_indices, n_targets)
+
     # Split targets into two non-empty sets
     split_point = random.randint(1, n_targets - 1)
     random.shuffle(targets)
@@ -32,58 +36,56 @@ def generate_random_indices(ncols, nrows, n_targets, n_obstacles, n_modify):
 
     # Randomly select obstacle indices (cannot overlap with targets)
     obstacles = random.sample(remaining_indices, n_obstacles)
+
     remaining_indices = list(set(remaining_indices) - set(obstacles))
 
     # Randomly select initial state (not in targets or obstacles)
     initial_state = random.choice(remaining_indices)
     initial_state = {initial_state}
-    # For modify_list, sample state indices first
+
+    # For modify_list, sample state indices from non-obstacle states
+    valid_states_for_sampling = list(set(all_indices) - set(obstacles))
     n_actions = 4
-    sampled_states = random.sample(range(total_states), n_modify)
+
+    # Make sure we don't try to sample more states than available
+    n_modify = min(n_modify, len(valid_states_for_sampling))
+
+    sampled_states = random.sample(valid_states_for_sampling, n_modify)
     modify_list = []
     for s in sampled_states:
         modify_list.extend([s * n_actions + a for a in range(n_actions)])
 
-    return targets, targets_set_low_reward, targets_set_high_reward,obstacles, initial_state, modify_list
+    return targets, targets_set_low_reward, targets_set_high_reward, obstacles, initial_state, modify_list
 
 
-# Initial set-up
-ncols = 6
-nrows = 6
-n_targets = 5
-n_obstacles = 8
-n_modify=4
-
+#randomly generate the locations, or you can specify your envrionment
 targets, targets_low_reward, targets_high_reward, obstacles, initial, modify_list = generate_random_indices(ncols, nrows, n_targets, n_obstacles, n_modify)
 print(targets, obstacles, initial, modify_list)
-reward_states = targets
+print(f'targets_low_reward={targets_low_reward}')
+print(f'targets_high_reward={targets_high_reward}')
 
 unsafe_u = []
-#or you can specify the environment
 
+#initialize uniform initial distribution
 initial_dist = dict([])
-# considering a single initial state.
 for state in range(ncols*nrows):
     if state in initial:
         initial_dist[state] = 1 / len(initial)
     else:
         initial_dist[state] = 0
 
-# sensor setup
-sensors = {'A', 'B', 'C', 'D', 'NO'}
-
-
-def generate_sensor_areas(grid_size, coverage_percent=90):
+def generate_sensor_areas(grid_size, coverage_percent=90, num_sensors=10):
     """
-    Generate random sensor areas A, B, C, D that cover approximately
+    Generate random sensor areas (e.g., A to J) that cover approximately
     the specified percentage of a gridworld.
 
     Parameters:
     grid_size: Tuple (width, height) defining the grid dimensions
     coverage_percent: Target percentage of grid to cover (default 90%)
+    num_sensors: Number of distinct sensors (default 10)
 
     Returns:
-    Dictionary of sets containing coordinates for each sensor area
+    Tuple: sensor_sets (list of sets for each sensor) + NO area set
     """
     width, height = grid_size
     total_cells = width * height
@@ -97,51 +99,59 @@ def generate_sensor_areas(grid_size, coverage_percent=90):
     # Randomly select cells to cover
     cells_to_distribute = random.sample(list(all_cells), cells_to_cover)
 
-    # Divide these cells roughly equally among sensors A, B, C, D
-    sets = {"A": set(), "B": set(), "C": set(), "D": set()}
+    # Generate sensor labels (e.g., 'A', 'B', ..., up to num_sensors)
+    sensor_labels = [chr(ord('A') + i) for i in range(num_sensors)]
+    sets = {label: set() for label in sensor_labels}
 
     # Distribute cells to sensors
     for i, cell in enumerate(cells_to_distribute):
-        sensor_index = i % 4  # Cycle through sensors
-        sensor_key = list(sets.keys())[sensor_index]
-        sets[sensor_key].add(cell)
+        sensor_label = sensor_labels[i % num_sensors]
+        sets[sensor_label].add(cell)
 
-    # Convert to flat indices for easier visualization
-    setA = {y * width + x for x, y in sets["A"]}
-    setB = {y * width + x for x, y in sets["B"]}
-    setC = {y * width + x for x, y in sets["C"]}
-    setD = {y * width + x for x, y in sets["D"]}
+    # Convert to flat indices
+    sensor_sets_flat = [
+        {y * width + x for x, y in sets[label]} for label in sensor_labels
+    ]
 
-    # Calculate NO area as the remainder
-    setNO = set(range(total_cells)) - (setA | setB | setC | setD)
+    # Calculate NO area
+    all_sensor_cells = set().union(*sensor_sets_flat)
+    setNO = set(range(total_cells)) - all_sensor_cells
 
-    return setA, setB, setC, setD, setNO
+    # Return all sensor sets + the NO set
+    return tuple(sensor_sets_flat) + (setNO,)
 
-setA, setB, setC, setD, setNO = generate_sensor_areas(grid_size=(ncols,nrows))
-print(f'setA={setA}')
-print(f'setB={setB}')
-print(f'setC={setC}')
-print(f'setD={setD}')
-print(f'setN0={setNO}')
 
-setA ={}
 
-# sensor noise
-sensor_noise = 0.1
+#specify sensor noise
+sensor_noise = 0.05
+print(f'sensor_noise = {sensor_noise}')
 
+#specify number of sensors
+num_sensors = 9  # or any other number of sensors you choose
+sensor_labels = [chr(ord('A') + i) for i in range(num_sensors)]
+
+# Generate sensor areas
+sensor_sets = generate_sensor_areas((ncols, nrows), coverage_percent=95, num_sensors=num_sensors)
+*sensor_coverage_list, setNO = sensor_sets
+
+# Print each sensor's coverage
+for label, coverage in zip(sensor_labels, sensor_coverage_list):
+    print(f"set{label} = {coverage}")
+
+# Print NO set
+print(f"setNO = {setNO}")
+
+# Initialize sensor coverage dictionary
+sensor_coverage_dict = {label: sensor_coverage_list[i] for i, label in enumerate(sensor_labels)}
+sensor_coverage_dict["NO"] = setNO
+
+# Sensor setup
 sensor_net = Sensor()
-sensor_net.sensors = sensors
+sensor_net.sensors = set(sensor_coverage_dict.keys())
 
-sensor_net.set_coverage('A', setA)
-sensor_net.set_coverage('B', setB)
-sensor_net.set_coverage('C', setC)
-sensor_net.set_coverage('D', setD)
-# sensor_net.set_coverage('E', setE)
-sensor_net.set_coverage('NO', setNO)
-
-# sensor_net.jamming_actions = masking_action
-sensor_net.sensor_noise = sensor_noise
-# sensor_net.sensor_cost_dict = sensor_cost
+# Set coverage for all sensors
+for label, coverage in sensor_coverage_dict.items():
+    sensor_net.set_coverage(label, coverage)
 
 
 #initialize differenrt types of agents with different transition and reward, but same initial state and environment
@@ -155,7 +165,6 @@ agent_gw_1 = GridworldGui(initial, nrows, ncols, robot_ts_1, targets, obstacles,
 agent_gw_1.mdp.get_supp()
 agent_gw_1.mdp.gettrans()
 agent_gw_1.mdp.get_reward()
-
 
 agent_gw_2 = GridworldGui(initial, nrows, ncols, robot_ts_2, targets, obstacles, unsafe_u, initial_dist)
 agent_gw_2.mdp.get_supp()
@@ -177,7 +186,7 @@ agent_gw_5.mdp.get_supp()
 agent_gw_5.mdp.gettrans()
 agent_gw_5.mdp.get_reward()
 
-
+#specify the reward of each type of agent
 value_dict_1 = dict()
 for state in agent_gw_1.mdp.states:
     if state in targets_low_reward:
@@ -208,56 +217,44 @@ for state in agent_gw_3.mdp.states:
 value_dict_4 = dict()
 for state in agent_gw_4.mdp.states:
     if state in targets_low_reward:
-        value_dict_4[state] = 2
+        value_dict_4[state] = 1
     elif state in targets_high_reward:
-        value_dict_4[state] = 2
+        value_dict_4[state] = 1
     else:
-        value_dict_4[state] = -2
+        value_dict_4[state] = -1
 
 value_dict_5 = dict()
 for state in agent_gw_5.mdp.states:
     if state in targets_low_reward:
-        value_dict_5[state] = 2
+        value_dict_5[state] = 1
     elif state in targets_high_reward:
         value_dict_5[state] = 1
     else:
-        value_dict_5[state] = -0.5
+        value_dict_5[state] = -0.1
 
 
-
+#initialize sidepayment
 side_payment = {}
 for state in agent_gw_1.mdp.states:
     s_idx = agent_gw_1.mdp.states.index(state)
     side_payment[state] = {}
     for action in agent_gw_1.mdp.actlist:
         a_idx = agent_gw_1.mdp.actlist.index(action)
-        if s_idx in modify_list:
-            side_payment[s_idx][a_idx] = 0
-        else:
-            side_payment[s_idx][a_idx] = 0
-# E_idx = agent_gw_1.actlist.index('E')
-# N_idx = agent_gw_1.actlist.index('N')
-# s1_idx = agent_gw_1.states.index('')
-# idx1 = 4*len(agent_gw_1.actlist) + E_idx
-# idx2 = 11*len(agent_gw_1.actlist) + N_idx
+        side_payment[s_idx][a_idx] = 0
 
 
-
-# # TODO: The augmented states still consider the gridcells with obstacles. Try by omitting the obstacle filled states
-# #  -> reduces computation.
-#sp:0-->both 45:E,  0.6-->1S2E
+#create hmm for each type of agent
 hmm_1 = HiddenMarkovModelP2(agent_gw_1.mdp, sensor_net, side_payment, modify_list, value_dict=value_dict_1)
 hmm_2 = HiddenMarkovModelP2(agent_gw_2.mdp, sensor_net, side_payment, modify_list, value_dict=value_dict_2)
 hmm_3 = HiddenMarkovModelP2(agent_gw_3.mdp, sensor_net, side_payment, modify_list, value_dict=value_dict_3)
 hmm_4 = HiddenMarkovModelP2(agent_gw_4.mdp, sensor_net, side_payment, modify_list, value_dict=value_dict_4)
 hmm_5 = HiddenMarkovModelP2(agent_gw_5.mdp, sensor_net, side_payment, modify_list, value_dict=value_dict_5)
-# hmm_list = [hmm_1, hmm_2, hmm_3, hmm_4, hmm_5]
-hmm_list = [hmm_1, hmm_2, hmm_3]
+hmm_list = [hmm_1, hmm_2, hmm_3, hmm_4, hmm_5]
 
-# masking_policy_gradient = PrimalDualPolicyGradient(hmm=hmm_p2, iter_num=1000, V=10, T=10, eta=1.5, kappa=0.1, epsilon=threshold)
-# masking_policy_gradient.solver()
-
-#for nips, I start ex from 8. 0 is for test(weights=0)
-masking_policy_gradient = InitialOpacityPolicyGradient(hmm_list=hmm_list, ex_num=ex_num, weight=1e-01, sp = 2, iter_num=100, batch_size=10, V=200,
-                                                       T=ncols+ncols)
+#run the algorithm
+masking_policy_gradient = InitialOpacityPolicyGradient(hmm_list=hmm_list, ex_num=ex_num, weight=1e-01, sp = 0, iter_num=200, batch_size=10, V=200,
+                                                       T=ncols+nrows)
 masking_policy_gradient.solver()
+
+#plot confusion matrix based on the final result
+plot_cm(masking_policy_gradient,traj_num=100)

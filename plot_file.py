@@ -1,6 +1,5 @@
 
 import pickle
-import numpy as np
 import torch
 import matplotlib
 matplotlib.use('TkAgg')
@@ -69,5 +68,5 @@ def plot_figures(ex_num, iter_num, modify_list,weight):
     # Save and display the plot
     plt.tight_layout()
     plt.savefig(f'./Data/graph_{ex_num}.png')
-    plt.show()
+    # plt.show()
 

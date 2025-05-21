@@ -22,16 +22,10 @@ class MDP:
         self.disc_factor = disc_factor
         self.goal_states = goal_states
 
-        # self.gettrans()
-
         # variables defined for the LP formulation to obtain the nominal policy.
         self.statespace = self.states
         self.A = self.actlist
         self.stotrans = dict([])
-
-        # if not self.reward:
-        #     self.get_supp()
-        #     self.get_reward()
 
     def get_reward(self):
         self.reward = defaultdict(lambda: defaultdict(dict))

@@ -7,9 +7,6 @@ import torch.nn.functional as F
 import itertools
 import pickle
 import math
-
-# At the top of the file
-
 from contextlib import contextmanager
 
 @contextmanager
@@ -35,13 +32,14 @@ if torch.cuda.is_available():
 
 
 class InitialOpacityPolicyGradient:
-    def __init__(self, hmm_list, ex_num,weight,sp, true_type_num=1, iter_num=1000, batch_size=1, V=100, T=10, eta=1,):
+    def __init__(self, hmm_list, ex_num,weight, sp, true_type_num=1, iter_num=1000, batch_size=1, V=100, T=12):
         print(f"ex_num={ex_num}")
         for hmm in hmm_list:
             if not isinstance(hmm, HiddenMarkovModelP2):
                 raise TypeError("Expected hmm to be an instance of HiddenMarkovModelP2.")
 
         self.num_of_types = len(hmm_list)
+        print(f'num of types={self.num_of_types}')
         self.true_type_num = true_type_num
         self.modify_list = hmm_list[0].modify_list
 
@@ -50,11 +48,13 @@ class InitialOpacityPolicyGradient:
 
         self.hmm_list = hmm_list  # Hidden markov model of type 1.
         self.iter_num = iter_num  # number of iterations for gradient ascent
+        print(f'iter_num={self.iter_num}')
         self.ex_num = ex_num
         self.V = V  # number of sampled trajectories.
         self.batch_size = batch_size  # number of trajectories processed in each batch.
         self.T = T  # length of the sampled trajectory.  # step size for theta.
-
+        print(f'batch_size={self.batch_size}')
+        print(f'V={self.V}')
         # The states and actions of original MDP
         self.states = self.hmm_list[0].states
         self.actions = self.hmm_list[0].actions
@@ -614,6 +614,7 @@ class InitialOpacityPolicyGradient:
             self.update_the_lists()
 
     def solver(self):
+        print('eta = 1*math.exp(-0.005 * i)')
         torch.set_printoptions(precision=10, sci_mode=True)
 
         # Pre-allocate tensors for reuse
@@ -645,7 +646,8 @@ class InitialOpacityPolicyGradient:
             self.x_list.append(self.x.clone().detach().cpu())
 
             # Update learning rate with decay
-            eta = 1*math.exp(-0.0005 * i)
+            eta = 1*math.exp(-0.005 * i)
+
 
             # Prepare all trajectories at once if possible
             # with timing("generate_trajectories"):
