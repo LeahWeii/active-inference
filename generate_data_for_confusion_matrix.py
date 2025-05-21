@@ -22,7 +22,7 @@ def plot_cm(masking_policy_gradient, traj_num=100):
     count = 0
     for true_type_num in range(num_types):
         count += 1
-        print(count)
+        print(f'Start to collect samples for type {count-1} agent')
         data_no_x = torch.zeros(traj_num)
         data_x_opt = torch.zeros(traj_num)
         valid_samples = 0
