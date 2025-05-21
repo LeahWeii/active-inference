@@ -4,16 +4,11 @@ import torch
 import matplotlib
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
+import os
 
 
 def plot_figures(ex_num, iter_num, modify_list,weight):
-
     plt.rcParams.update({'font.size': 14})
-
-# ex_num = 0
-# iter_num = 5
-# modify_list = [112, 113, 114, 115, 68, 69, 70, 71, 56, 57, 58, 59, 24, 25, 26, 27]
-# weight = 1e-05
 
     iteration_list = range(iter_num)
 
@@ -22,9 +17,6 @@ def plot_figures(ex_num, iter_num, modify_list,weight):
 
     with open(f'./Data/x_list_{ex_num}', 'rb') as file:
         x_list = pickle.load(file)
-
-
-
 
 
     side_payment_norm_list = []

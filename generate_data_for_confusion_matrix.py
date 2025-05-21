@@ -4,8 +4,13 @@ import numpy as np
 from sklearn.metrics import confusion_matrix
 import seaborn as sns
 import matplotlib.pyplot as plt
+import os
 
 def plot_cm(masking_policy_gradient, traj_num=100):
+    # Create the folder if it doesn't exist
+    output_dir = './Data/confusion_matrix'
+    os.makedirs(output_dir, exist_ok=True)
+
     ex_num = masking_policy_gradient.ex_num
     with open(f'./Data/x_list_{ex_num}', 'rb') as file:
         x_list = pickle.load(file)
@@ -62,10 +67,10 @@ def plot_cm(masking_policy_gradient, traj_num=100):
                 print(f"Collected {valid_samples}/{traj_num} valid samples for type {true_type_num}")
 
         # Save the collected data
-        with open('./Data/data_for_confusion_matrix/data_no_x_trueType' + str(true_type_num) + f'_{ex_num}.pkl',
+        with open('./Data/confusion_matrix/data_no_x_trueType' + str(true_type_num) + f'_{ex_num}.pkl',
                   'wb') as file:
             pickle.dump(data_no_x, file)
-        with open('./Data/data_for_confusion_matrix/data_x_opt_trueType' + str(true_type_num) + f'_{ex_num}.pkl',
+        with open('./Data/confusion_matrix/data_x_opt_trueType' + str(true_type_num) + f'_{ex_num}.pkl',
                   'wb') as file:
             pickle.dump(data_x_opt, file)
 
@@ -76,10 +81,10 @@ def plot_cm(masking_policy_gradient, traj_num=100):
 
     # Load data
     for true_type in range(num_types):
-        with open(f'./Data/data_for_confusion_matrix/data_no_x_trueType{true_type}_{ex_num}.pkl', 'rb') as f:
+        with open(f'./Data/confusion_matrix/data_no_x_trueType{true_type}_{ex_num}.pkl', 'rb') as f:
             pred_no_x = pickle.load(f)  # This is a tensor of size traj_num
 
-        with open(f'./Data/data_for_confusion_matrix/data_x_opt_trueType{true_type}_{ex_num}.pkl', 'rb') as f:
+        with open(f'./Data/confusion_matrix/data_x_opt_trueType{true_type}_{ex_num}.pkl', 'rb') as f:
             pred_x_opt = pickle.load(f)
 
         # Add true_type label for each trajectory
@@ -108,7 +113,7 @@ def plot_cm(masking_policy_gradient, traj_num=100):
         plt.ylabel('True')
         # plt.title(title)
         plt.tight_layout()
-        plt.savefig(f'./Data/data_for_confusion_matrix/' + title + f'_{ex_num}.png')
+        plt.savefig(f'./Data/confusion_matrix/' + title + f'_{ex_num}.png')
 
 
     plot_conf_matrix(cm_no_x, 'Confusion Matrix (no_x)')

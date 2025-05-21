@@ -614,7 +614,6 @@ class InitialOpacityPolicyGradient:
             self.update_the_lists()
 
     def solver(self):
-        print('eta = 1*math.exp(-0.005 * i)')
         torch.set_printoptions(precision=10, sci_mode=True)
 
         # Pre-allocate tensors for reuse
@@ -731,6 +730,10 @@ class InitialOpacityPolicyGradient:
 
         # Set iteration list
         self.iteration_list = range(self.iter_num)
+
+        # Create the folder if it doesn't exist
+        output_dir = './Data'
+        os.makedirs(output_dir, exist_ok=True)
 
         # Save results
         with open(f'./Data/entropy_values_{self.ex_num}.pkl', 'wb') as file:
