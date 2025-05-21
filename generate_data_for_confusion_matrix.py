@@ -34,7 +34,7 @@ def plot_cm(masking_policy_gradient, traj_num=100):
             masking_policy_gradient.x = no_x
             masking_policy_gradient.update_HMMs()
             P_T_y_list_no_x = masking_policy_gradient.approximate_posterior(y_obs_data)
-            print(f'no_x={P_T_y_list_no_x}')
+
 
             # Convert list to tensor
             probs_no_x = torch.stack(P_T_y_list_no_x)
@@ -43,14 +43,12 @@ def plot_cm(masking_policy_gradient, traj_num=100):
             masking_policy_gradient.x = x_opt
             masking_policy_gradient.update_HMMs()
             P_T_y_list_x_opt = masking_policy_gradient.approximate_posterior(y_obs_data)
-            print(f'x_opt={P_T_y_list_x_opt}')
 
             # Convert list to tensor
             probs_x_opt = torch.stack(P_T_y_list_x_opt)
 
             # Check if either contains NaN - if so, skip this sample
             if torch.isnan(probs_no_x).any() or torch.isnan(probs_x_opt).any():
-                print("Skipping sample with NaN values")
                 continue
 
             # If we reach here, the sample is valid

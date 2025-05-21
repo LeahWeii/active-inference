@@ -2,10 +2,7 @@ from mdp_env.gridworld_env_multi_init_states import *
 from generate_data_for_confusion_matrix import *
 import random
 
-ex_num = 57
-
-with open(f'./Data/x_list_{ex_num}', 'rb') as file:
-    x_list = pickle.load(file)
+ex_num = 0
 
 seed = 0
 random.seed(seed)
@@ -60,9 +57,13 @@ def generate_random_indices(ncols, nrows, n_targets, n_obstacles, n_modify):
 
 #randomly generate the locations, or you can specify your envrionment
 targets, targets_low_reward, targets_high_reward, obstacles, initial, modify_list = generate_random_indices(ncols, nrows, n_targets, n_obstacles, n_modify)
-print(targets, obstacles, initial, modify_list)
+
+print(f'targets={targets}')
 print(f'targets_low_reward={targets_low_reward}')
 print(f'targets_high_reward={targets_high_reward}')
+print(f'obstacles={obstacles}')
+print(f'possible initial states={initial}')
+print(f'modify_list={modify_list}')
 
 unsafe_u = []
 
