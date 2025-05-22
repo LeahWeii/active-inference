@@ -4,7 +4,7 @@ This project implements an active inference framework for incentive design in st
 
 ## Overview
 
-The system models robot agents with different potential behavioral parameters (transition probabilities and reward functions) operating in a stochastic gridworld environment. The main algorithm learns optimal side payments to maximize the entropy of the posterior distribution over a agent type given a observed trajectory, while regularizing the cost of side payments. This assumes the leader has only partial observations of the agent's behavior.
+The system models robot agents with different potential behavioral parameters (transition probabilities and reward functions) operating in a stochastic gridworld environment. The main algorithm learns optimal side payments to maximize the conditional entropy of the posterior distribution over a agent type given a observed trajectory, while regularizing the cost of side payments. This assumes the leader has only partial observations of the agent's behavior.
 
 ## Project Structure
 
