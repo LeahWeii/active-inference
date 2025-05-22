@@ -16,7 +16,9 @@ The system models robot agents with different potential behavioral parameters (t
 │   └── initial_opacity_gradient_calculation.py  # Core algorithm implementation
 ├── mdp_env/
 │   ├── gridworld_env_multi_init_states.py      # Gridworld environment classes
-│   └── [other MDP, HMM, and sensor classes]
+│   ├── hidden_markov_model_of_P2.py            
+│   ├── mdp.py     
+│   └── sensors.py                              # Sensors class
 ├── robotmdp_para/             
 │   └── robotmdp_*.txt               # Robots transition parameters
 └── Data/                            # Output directory for results
@@ -31,11 +33,11 @@ The system models robot agents with different potential behavioral parameters (t
 ### Main Files
 
 - **`gridworld_example.py`**: Central experiment configuration and execution
-  - Sets up 10×10 gridworld with randomly generated targets, obstacles, and sensor coverage
-  - Initializes 5 different robot types with varying transition probabilities and reward structures
+  - Sets up $n \times n$ gridworld with randomly generated targets, obstacles, and sensor coverage
+  - Initializes different robot types with varying transition probabilities and reward structures
   - Configures sensor network with multiple sensors covering some percentage of the whole area
-  - Runs the opacity policy gradient algorithm
-  - Generates confusion matrix analysis
+  - Runs the solver
+  - Generates confusion matrix
 
 - **`plot_file.py`**: Visualization utilities for algorithm convergence
   - Plots objective function evolution
@@ -54,20 +56,18 @@ The system models robot agents with different potential behavioral parameters (t
 - **`solver/initial_opacity_gradient_calculation.py`**: 
   - Implements the `InitialOpacityPolicyGradient` class
   - Gradient-based optimization of side payments
-  - Policy gradient methods for objective maximization
   - Batch processing and trajectory sampling
 
 ### Environment Components
 
 - **`mdp_env/`**: Contains MDP framework classes
-  - Gridworld environment with multiple initial states
+  - Gridworld environment in the frame of Markov Decision Process
   - Hidden Markov Model implementations
   - Sensor network modeling with configurable noise
-  - State transition and reward function management
 
 ## Algorithm Overview
 
-The project implements an **opacity-based active inference** approach:
+The project implements the **active inference through incentive design**:
 
 1. **Environment Setup**: Creates a stochastic gridworld with multiple agent types
 2. **Sensor Network**: Deploys sensors with overlapping coverage areas (A-I + NO area)
@@ -87,14 +87,13 @@ Users can either:
 The system supports multiple robot types with configurable:
 - **Transition probabilities** (α parameters) defining stochastic movement behavior - *configured in `robotmdp_para/` directory*
 - **Reward structures** with different values for target states and movement penalties - *defined in `value_dict_*` variables in `gridworld_example.py`*
-- **Behavioral patterns** ranging from conservative to aggressive exploration strategies
 
 ### Algorithm Parameters
 Key parameters are configurable in `gridworld_example.py`:
-- **Regularization weight** for side payment optimization - *`weight` parameter in `InitialOpacityPolicyGradient`*
+- **Regularization weight** for regularization factor in objective function - *`weight` parameter in `InitialOpacityPolicyGradient`*
 - **Iteration count** for gradient descent convergence - *`iter_num` parameter*
-- **Batch size** for trajectory sampling - *`batch_size` parameter*
-- **Planning horizon** and episode length constraints - *`V` and `T` parameters*
+- **Batch size** for number of trajectories processed in each batch - *`batch_size` parameter*
+- **Planning horizon** for number of sampled trajectories - *`V` parameter*
 
 
 
@@ -108,8 +107,8 @@ python gridworld_example.py
 This will:
 1. Generate random environment layout
 2. Initialize all agent types and sensor network
-3. Run the opacity policy gradient algorithm
-4. Save results to `./Data/` directory
+3. Run the solver
+4. Save results to `./Data/` directory and display the convergence plot
 5. Generate and display confusion matrices
 
 ### Visualization
@@ -117,7 +116,7 @@ This will:
 python plot_file.py
 ```
 
-Generates convergence plots showing:
+Generates convergence plots based on the saved data showing:
 - Objective function trajectory
 - Estimated entropy evolution  
 - Side payment magnitude over iterations
@@ -135,7 +134,8 @@ Generates convergence plots showing:
 ```
 Data/
 ├── entropy_values_{ex_num}.pkl      # Entropy trajectory
-├── x_list_{ex_num}                  # Side payment trajectory  
+├── x_list_{ex_num}                  # Side payment trajectory
+├── theta_collection_{ex_num}        # policy parameter trajectory  
 ├── graph_{ex_num}.png               # Convergence plots
 └── confusion_matrix/
     ├── data_no_x_trueType{i}_{ex_num}.pkl    # Baseline predictions
