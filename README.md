@@ -11,7 +11,7 @@ The system models robot agents with different potential behavioral parameters (t
 ```
 ├── gridworld_example.py              # Main experiment setup and execution
 ├── plot_file.py                      # Convergence visualization utilities
-├── generate_data_for_confusion_matrix.py  # Confusion matrix generation and analysis
+├── generate_data_for_confusion_matrix.py  # Confusion matrix generation
 ├── solver/
 │   └── initial_opacity_gradient_calculation.py  # Core algorithm implementation
 ├── mdp_env/
