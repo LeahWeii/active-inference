@@ -36,7 +36,7 @@ The system models robot agents with different potential behavioral parameters (t
   - Sets up $n \times n$ gridworld with randomly generated targets, obstacles, and sensor coverage
   - Initializes different robot types with varying transition probabilities and reward structures
   - Runs the solver
-  - Generates confusion matrix
+  - Generates confusion matrices
 
 - **`plot_file.py`**: Visualization utilities for algorithm convergence
   - Plots objective function evolution
