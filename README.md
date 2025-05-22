@@ -35,7 +35,6 @@ The system models robot agents with different potential behavioral parameters (t
 - **`gridworld_example.py`**: Central experiment configuration and execution
   - Sets up $n \times n$ gridworld with randomly generated targets, obstacles, and sensor coverage
   - Initializes different robot types with varying transition probabilities and reward structures
-  - Configures sensor network with multiple sensors covering some percentage of the whole area
   - Runs the solver
   - Generates confusion matrix
 
